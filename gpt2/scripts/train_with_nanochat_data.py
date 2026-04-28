@@ -8,8 +8,8 @@ from nanochat.dataset import parquets_iter_batched
 import tiktoken
 
 # Load data from nanochat parquet shards
-MAX_TRAIN_DOCS = 1000
-MAX_VAL_DOCS = 100
+MAX_TRAIN_DOCS = 20000
+MAX_VAL_DOCS = 500
 
 train_texts = []
 for batch in parquets_iter_batched(split="train"):
@@ -30,12 +30,12 @@ for batch in parquets_iter_batched(split="val"):
 # Create data loaders
 gpt2_small_cfg = model_configs["gpt2-small"]
 train_loader = create_dataloader_v2(
-    train_texts, batch_size=4,
+    train_texts, batch_size=64,
     max_length=gpt2_small_cfg["context_length"],
     stride=128, shuffle=True
 )
 val_loader = create_dataloader_v2(
-    val_texts, batch_size=4,
+    val_texts, batch_size=64,
     max_length=gpt2_small_cfg["context_length"],
     stride=128, shuffle=False
 )
@@ -46,6 +46,9 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 model = GPTModel(gpt2_small_cfg)
 model.to(device)
+if torch.cuda.device_count() > 1:
+    print(f"Using {torch.cuda.device_count()} GPUs with DataParallel")
+    model = torch.nn.DataParallel(model)
 
 optimizer = torch.optim.AdamW(model.parameters(), lr=5e-4)
 tokenizer = tiktoken.get_encoding("gpt2")
@@ -56,7 +59,7 @@ train_model_simple(
     train_loader=train_loader,
     val_loader=val_loader,
     optimizer=optimizer,
-    num_epochs=10,
+    num_epochs=5,
     eval_freq=5,
     eval_iter=10,
     device=device,

@@ -40,7 +40,8 @@ def calc_loss_loader(data_loader, model, device, num_batches=None):
 def generate_and_print_sample(model, tokenizer, device, start_context):
     "Function used to print generated text across checkpoints of the model throughout training"
     model.eval()
-    context_size = model.pos_emb.weight.shape[0]
+    base_model = model.module if hasattr(model, "module") else model
+    context_size = base_model.pos_emb.weight.shape[0]
     encoded = text_to_token_ids(start_context, tokenizer).to(device)
     with torch.no_grad():
         token_ids = generate_text_simple(
