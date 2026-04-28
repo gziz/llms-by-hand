@@ -1,12 +1,12 @@
 import torch
 from torch import nn
 
+
 # DEPENDENCY FROM CHAPTER 3
 class MultiHeadAttention(nn.Module):
     def __init__(self, d_in, d_out, context_length, dropout, num_heads, qkv_bias=False):
         super().__init__()
-        assert (d_out % num_heads == 0), \
-            "d_out must be divisible by num_heads"
+        assert d_out % num_heads == 0, "d_out must be divisible by num_heads"
 
         self.d_out = d_out
         self.num_heads = num_heads
@@ -20,8 +20,7 @@ class MultiHeadAttention(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
         self.register_buffer(
-            "mask",
-            torch.triu(torch.ones(context_length, context_length), diagonal=1)
+            "mask", torch.triu(torch.ones(context_length, context_length), diagonal=1)
         )
 
     def forward(self, x):
@@ -34,24 +33,31 @@ class MultiHeadAttention(nn.Module):
         K = K.view(b, curr_seq_len, self.num_heads, self.head_dim)
         V = V.view(b, curr_seq_len, self.num_heads, self.head_dim)
 
-        Q = Q.transpose(1, 2) # (B, H, S, Hd)
+        Q = Q.transpose(1, 2)  # (B, H, S, Hd)
         K = K.transpose(1, 2)
         V = V.transpose(1, 2)
 
-        attn_scores = torch.matmul(Q, K.transpose(2, 3)) / (self.head_dim ** 0.5) # (B, H, S, Hd) @ (B, H, Hd, S) -> @ (B, H, S, S)
+        attn_scores = torch.matmul(Q, K.transpose(2, 3)) / (
+            self.head_dim**0.5
+        )  # (B, H, S, Hd) @ (B, H, Hd, S) -> @ (B, H, S, S)
         attn_scores = attn_scores.masked_fill(
-            self.mask.bool()[:curr_seq_len, :curr_seq_len], -torch.inf)
+            self.mask.bool()[:curr_seq_len, :curr_seq_len], -torch.inf
+        )
 
         attn_weights = torch.softmax(attn_scores, dim=-1)
         attn_weights = self.dropout(attn_weights)
 
         context_vec = attn_weights @ V  # (B, H, S, S) @ (B, H, S, Hd) -> (B, H, S, Hd)
-        context_vec = context_vec.transpose(1, 2) # (B, H, S, Hd) -> (B, S, H, Hd)
+        context_vec = context_vec.transpose(1, 2)  # (B, H, S, Hd) -> (B, S, H, Hd)
 
-        context_vec = context_vec.contiguous().view(b, curr_seq_len, self.d_out) # (B, S, d_out)
+        context_vec = context_vec.contiguous().view(
+            b, curr_seq_len, self.d_out
+        )  # (B, S, d_out)
         return self.out_proj(context_vec)
 
+
 # DEPENDENCY FROM CH 4
+
 
 class LayerNorm(nn.Module):
     def __init__(self, emb_dim, eps=1e-5):
@@ -73,10 +79,18 @@ class GELU(nn.Module):
         super().__init__()
 
     def forward(self, x):
-        return 0.5 * x * (1 + torch.tanh(
-            torch.sqrt(torch.tensor(2.0 / torch.pi)) *
-            (x + 0.044715 * torch.pow(x, 3))
-        ))
+        return (
+            0.5
+            * x
+            * (
+                1
+                + torch.tanh(
+                    torch.sqrt(torch.tensor(2.0 / torch.pi))
+                    * (x + 0.044715 * torch.pow(x, 3))
+                )
+            )
+        )
+
 
 class FeedForward(nn.Module):
     def __init__(self, cfg):
@@ -84,12 +98,11 @@ class FeedForward(nn.Module):
         self.layers = nn.Sequential(
             nn.Linear(cfg["emb_dim"], 4 * cfg["emb_dim"]),
             GELU(),
-            nn.Linear(4 * cfg["emb_dim"], cfg["emb_dim"])
+            nn.Linear(4 * cfg["emb_dim"], cfg["emb_dim"]),
         )
 
     def forward(self, x):
         return self.layers(x)
-
 
 
 class TransformerBlock(nn.Module):
@@ -102,7 +115,7 @@ class TransformerBlock(nn.Module):
             context_length=cfg["context_length"],
             dropout=cfg["drop_rate"],
             num_heads=cfg["n_heads"],
-            qkv_bias=cfg["qkv_bias"]
+            qkv_bias=cfg["qkv_bias"],
         )
         self.ffn = FeedForward(cfg)
         self.norm1 = LayerNorm(cfg["emb_dim"])

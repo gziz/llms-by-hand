@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Model weights and data
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.ckpt
+
+# Logs
+*.log
+wandb/
+runs/
+
+nanochat
