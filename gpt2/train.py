@@ -1,6 +1,6 @@
 import torch
 from gpt2.utils import text_to_token_ids, token_ids_to_text
-from gpt2.inference import generate_text_simple
+from gpt2.inference import generate_text_simple, generate
 
 
 def calc_loss_batch(input_batch, target_batch, model, device):
@@ -44,8 +44,9 @@ def generate_and_print_sample(model, tokenizer, device, start_context):
     context_size = base_model.pos_emb.weight.shape[0]
     encoded = text_to_token_ids(start_context, tokenizer).to(device)
     with torch.no_grad():
-        token_ids = generate_text_simple(
-            model=model, idx=encoded, max_new_tokens=50, context_size=context_size
+        token_ids = generate(
+            model=model, idx=encoded, max_new_tokens=50, context_size=context_size,
+            temperature=0.8, top_k=40,
         )
 
     decoded_text = token_ids_to_text(token_ids, tokenizer)
@@ -76,6 +77,8 @@ def train_model_simple(
     eval_iter,
     start_context,
     tokenizer,
+    scheduler=None,
+    generate_freq=None,
 ):
     train_losses, val_losses, track_tokens_seen = [], [], []
     tokens_seen, global_step = 0, -1
@@ -86,6 +89,8 @@ def train_model_simple(
             loss = calc_loss_batch(input_batch, target_batch, model, device)  # 2BC
             loss.backward()  # 2D
             optimizer.step()  # 2E
+            if scheduler is not None:
+                scheduler.step()
             global_step += 1
 
             if global_step % eval_freq == 0:
@@ -102,6 +107,10 @@ def train_model_simple(
                     f"Val loss {val_loss:.3f}"
                 )  # 2F
 
-        generate_and_print_sample(model, tokenizer, device, start_context)  # 3
+            if generate_freq is not None and global_step % generate_freq == 0:
+                generate_and_print_sample(model, tokenizer, device, start_context)
+
+        if generate_freq is None:
+            generate_and_print_sample(model, tokenizer, device, start_context)  # 3
 
     return train_losses, val_losses, track_tokens_seen

@@ -1,5 +1,6 @@
 from gpt2.train import train_model_simple
 import torch
+from torch.optim.lr_scheduler import CosineAnnealingLR
 from gpt2.model import GPTModel
 from gpt2.configs import model_configs
 from gpt2.utils import text_to_token_ids, token_ids_to_text, create_dataloader_v2
@@ -8,8 +9,8 @@ from nanochat.dataset import parquets_iter_batched
 import tiktoken
 
 # Load data from nanochat parquet shards
-MAX_TRAIN_DOCS = 20000
-MAX_VAL_DOCS = 500
+MAX_TRAIN_DOCS = 100_000
+MAX_VAL_DOCS = 2000
 
 train_texts = []
 for batch in parquets_iter_batched(split="train"):
@@ -50,7 +51,9 @@ if torch.cuda.device_count() > 1:
     print(f"Using {torch.cuda.device_count()} GPUs with DataParallel")
     model = torch.nn.DataParallel(model)
 
-optimizer = torch.optim.AdamW(model.parameters(), lr=5e-4)
+num_epochs = 2
+optimizer = torch.optim.AdamW(model.parameters(), lr=3e-4, weight_decay=0.1)
+scheduler = CosineAnnealingLR(optimizer, T_max=num_epochs * len(train_loader))
 tokenizer = tiktoken.get_encoding("gpt2")
 
 # RUN TRAINING JOB
@@ -59,10 +62,12 @@ train_model_simple(
     train_loader=train_loader,
     val_loader=val_loader,
     optimizer=optimizer,
-    num_epochs=5,
+    scheduler=scheduler,
+    num_epochs=num_epochs,
     eval_freq=5,
     eval_iter=10,
     device=device,
     start_context="Once upon",
     tokenizer=tokenizer,
+    generate_freq=50,
 )
