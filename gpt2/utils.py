@@ -106,7 +106,7 @@ def load_weights_into_gpt(gpt, params):
 
 
 # Chapter 2: Dataset and Dataloader
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader, Dataset
 
 
 class GPTDatasetV1(Dataset):
@@ -116,11 +116,11 @@ class GPTDatasetV1(Dataset):
 
         # Tokenize the entire text
         token_ids = tokenizer.encode(txt, allowed_special={"<|endoftext|>"})
-        assert len(token_ids) > max_length, (
-            "Number of tokenized inputs must at least be equal to max_length+1"
-        )
+        assert (
+            len(token_ids) > max_length
+        ), "Number of tokenized inputs must at least be equal to max_length+1"
 
-        # Use a sliding window to chunk the book into overlapping sequences of max_length
+        # Use a sliding window to chunk the input text into overlapping sequences of max_length
         for i in range(0, len(token_ids) - max_length, stride):
             input_chunk = token_ids[i : i + max_length]
             target_chunk = token_ids[i + 1 : i + max_length + 1]
@@ -164,7 +164,8 @@ def create_dataloader_v1(
 
 class GPTDatasetMultiDoc(Dataset):
     """Like GPTDatasetV1 but applies sliding window per-document to avoid
-    mixing unrelated documents in the same context window."""
+    mixing unrelated documents in the same context window.
+    Made for Karpath's nanochat dataset"""
 
     def __init__(self, documents, tokenizer, max_length, stride):
         self.input_ids = []

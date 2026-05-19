@@ -1,9 +1,19 @@
+from typing import Optional
+
+import tiktoken
 import torch
+from torch import Tensor
+from torch.nn import Module
+from torch.optim.optimizer import Optimizer
+from torch.utils.data import DataLoader
+
+from gpt2.inference import generate
 from gpt2.utils import text_to_token_ids, token_ids_to_text
-from gpt2.inference import generate_text_simple, generate
 
 
-def calc_loss_batch(input_batch, target_batch, model, device):
+def calc_loss_batch(
+    input_batch: Tensor, target_batch: Tensor, model: Module, device: str
+):
     "Given an input and target batch, run the model and get the loss."
     input_batch = input_batch.to(device)
     target_batch = target_batch.to(device)
@@ -16,7 +26,12 @@ def calc_loss_batch(input_batch, target_batch, model, device):
 
 
 # Given a dataloader (e.g. training, validation) get the loss for num_batches of the dataloader
-def calc_loss_loader(data_loader, model, device, num_batches=None):
+def calc_loss_loader(
+    data_loader: DataLoader,
+    model: Module,
+    device: str,
+    num_batches: Optional[int] = None,
+):
     model.eval()
     total_loss = 0
     if len(data_loader) == 0:
@@ -37,7 +52,9 @@ def calc_loss_loader(data_loader, model, device, num_batches=None):
     return total_loss / num_batches
 
 
-def generate_and_print_sample(model, tokenizer, device, start_context):
+def generate_and_print_sample(
+    model: Module, tokenizer: tiktoken.Encoding, device: str, start_context: str
+):
     "Function used to print generated text across checkpoints of the model throughout training"
     model.eval()
     base_model = model.module if hasattr(model, "module") else model
@@ -45,8 +62,12 @@ def generate_and_print_sample(model, tokenizer, device, start_context):
     encoded = text_to_token_ids(start_context, tokenizer).to(device)
     with torch.no_grad():
         token_ids = generate(
-            model=model, idx=encoded, max_new_tokens=50, context_size=context_size,
-            temperature=0.8, top_k=40,
+            model=model,
+            idx=encoded,
+            max_new_tokens=50,
+            context_size=context_size,
+            temperature=0.8,
+            top_k=40,
         )
 
     decoded_text = token_ids_to_text(token_ids, tokenizer)
@@ -54,7 +75,17 @@ def generate_and_print_sample(model, tokenizer, device, start_context):
     model.train()
 
 
-def evaluate_model(model, train_loader, val_loader, device, eval_iter):
+def evaluate_model(
+    model: Module,
+    train_loader: DataLoader,
+    val_loader: DataLoader,
+    device: str,
+    eval_iter: int,
+):
+    """
+    Evaluate the model using the training and validation dataloaders.
+    Note: eval_iter is used to determine how many batches are used, you're not evaluating on the full train dataset!
+    """
     model.eval()
     with torch.no_grad():
         train_loss = calc_loss_loader(
@@ -67,16 +98,16 @@ def evaluate_model(model, train_loader, val_loader, device, eval_iter):
 
 
 def train_model_simple(
-    model,
-    train_loader,
-    val_loader,
-    optimizer,
-    device,
-    num_epochs,
-    eval_freq,
-    eval_iter,
-    start_context,
-    tokenizer,
+    model: Module,
+    train_loader: DataLoader,
+    val_loader: DataLoader,
+    optimizer: Optimizer,
+    device: str,
+    num_epochs: int,
+    eval_freq: int,
+    eval_iter: int,
+    start_context: str,
+    tokenizer: tiktoken.Encoding,
     scheduler=None,
     generate_freq=None,
 ):
