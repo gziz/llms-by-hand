@@ -32,6 +32,10 @@ def calc_loss_loader(
     device: str,
     num_batches: Optional[int] = None,
 ):
+    """
+    Given a dataloader (e.g. training, validation) get the loss for num_batches of the dataloader.
+    If num_batches is None, will calculate loss on the full dataloader.
+    """
     model.eval()
     total_loss = 0
     if len(data_loader) == 0:
@@ -111,15 +115,16 @@ def train_model_simple(
     scheduler=None,
     generate_freq=None,
 ):
+    "A simple training loop for a GPT model. Evaluates the model every eval_freq steps and prints the train and val loss."
     train_losses, val_losses, track_tokens_seen = [], [], []
     tokens_seen, global_step = 0, -1
 
-    for epoch in range(num_epochs):  # 1
-        for i, (input_batch, target_batch) in enumerate(train_loader):  # 2
+    for epoch in range(num_epochs):
+        for i, (input_batch, target_batch) in enumerate(train_loader):
             optimizer.zero_grad()  # 2A
-            loss = calc_loss_batch(input_batch, target_batch, model, device)  # 2BC
-            loss.backward()  # 2D
-            optimizer.step()  # 2E
+            loss = calc_loss_batch(input_batch, target_batch, model, device)
+            loss.backward()
+            optimizer.step()
             if scheduler is not None:
                 scheduler.step()
             global_step += 1

@@ -161,7 +161,7 @@ def create_dataloader_v1(
 
     return dataloader
 
-
+# Separate from Raschka's codebase; used for Karpathy's nanochat datasets.
 class GPTDatasetMultiDoc(Dataset):
     """Like GPTDatasetV1 but applies sliding window per-document to avoid
     mixing unrelated documents in the same context window.

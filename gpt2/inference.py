@@ -17,7 +17,7 @@ def generate_text_simple(model, idx, max_new_tokens, context_size):
     return idx
 
 
-# Includes top_k, temperature and eos break
+# Includes top_k, temperature and EOS break
 def generate(
     model, idx, max_new_tokens, context_size, temperature=0.0, top_k=None, eos_id=None
 ):

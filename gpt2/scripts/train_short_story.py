@@ -1,13 +1,13 @@
-from gpt2.train import train_model_simple
+import urllib
+
+import tiktoken
 import torch
 from huggingface_hub import hf_hub_download
 
-from gpt2.model import GPTModel
 from gpt2.configs import model_configs
-from gpt2.utils import load_weights_into_gpt, text_to_token_ids, token_ids_to_text, create_dataloader_v1
-from gpt2.inference import generate
-
-import tiktoken
+from gpt2.model import GPTModel
+from gpt2.train import train_model_simple
+from gpt2.utils import create_dataloader_v1
 
 gpt2_small_cfg = model_configs["gpt2-small"]
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -24,7 +24,6 @@ model.to(device)
 
 tokenizer = tiktoken.get_encoding("gpt2")
 
-import  urllib
 
 file_path = "https://raw.githubusercontent.com/rasbt/LLMs-from-scratch/28c65cdfbc3338e2e040016eea4b7fdf556e4d57/ch02/01_main-chapter-code/the-verdict.txt"
 with urllib.request.urlopen(file_path) as f:

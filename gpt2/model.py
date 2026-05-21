@@ -2,7 +2,6 @@ import torch
 from torch import nn
 
 
-# DEPENDENCY FROM CHAPTER 3
 class MultiHeadAttention(nn.Module):
     def __init__(self, d_in, d_out, context_length, dropout, num_heads, qkv_bias=False):
         super().__init__()
@@ -54,9 +53,6 @@ class MultiHeadAttention(nn.Module):
             b, curr_seq_len, self.d_out
         )  # (B, S, d_out)
         return self.out_proj(context_vec)
-
-
-# DEPENDENCY FROM CH 4
 
 
 class LayerNorm(nn.Module):
